@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="小児薬用量">
+<meta name="theme-color" content="#1a2f3a">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>小児薬用量換算</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  --bg: #f0ede8;
+  --card: #ffffff;
+  --border: #d4cfc7;
+  --text: #2c2a26;
+  --text-sub: #6b6660;
+  --accent: #1a6b5a;
+  --accent-light: #e4f0ec;
+  --accent-dark: #0f4a3e;
+  --warn: #c45a3c;
+  --warn-light: #fef0ec;
+  --blue: #2a5c8f;
+  --blue-light: #eaf1f8;
+  --header-bg: #1a2f3a;
+  --header-text: #e8e4de;
+  --row-hover: #faf8f5;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  --safe-top: env(safe-area-inset-top);
+  --safe-bottom: env(safe-area-inset-bottom);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: 'Noto Sans JP', -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overscroll-behavior: none;
+}
+
+/* ── Header ── */
+.header {
+  background: var(--header-bg);
+  color: var(--header-text);
+  padding: calc(12px + var(--safe-top)) 16px 12px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.header h1 {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.header h1 small {
+  font-size: 10px;
+  font-weight: 300;
+  opacity: 0.6;
+  display: block;
+  margin-top: 1px;
+}
+
+.info-btn {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,0.3);
+  background: none;
+  color: rgba(255,255,255,0.7);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Weight input area */
+.weight-area {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+
+.weight-area label {
+  font-size: 13px;
+  font-weight: 400;
+  white-space: nowrap;
+  opacity: 0.8;
+}
+
+.weight-area input {
+  flex: 1;
+  max-width: 120px;
+  padding: 8px 12px;
+  border: 2px solid rgba(255,255,255,0.2);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 22px;
+  font-weight: 600;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.weight-area input:focus {
+  border-color: rgba(255,255,255,0.5);
+  background: rgba(255,255,255,0.18);
+}
+
+.weight-area input::placeholder { color: rgba(255,255,255,0.3); }
+
+.weight-area .unit {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.weight-presets {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.weight-preset {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.7);
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.weight-preset:active, .weight-preset.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* ── Category Tabs ── */
+.tabs-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: 12px 16px 4px;
+}
+.tabs-scroll::-webkit-scrollbar { display: none; }
+
+.category-tabs {
+  display: flex;
+  gap: 6px;
+  width: max-content;
+}
+
+.cat-tab {
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--card);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.cat-tab:active { transform: scale(0.96); }
+.cat-tab.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+/* ── Content ── */
+.container {
+  padding: 8px 12px calc(20px + var(--safe-bottom));
+}
+
+.disclaimer {
+  background: var(--warn-light);
+  border-left: 3px solid var(--warn);
+  border-radius: 0 8px 8px 0;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  font-size: 11px;
+  color: #8b4a35;
+  line-height: 1.7;
+}
+
+/* ── Drug Cards (mobile-first) ── */
+.drug-section {
+  margin-bottom: 12px;
+}
+
+.section-header {
+  padding: 8px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--accent-dark);
+  background: var(--accent-light);
+  border-radius: 10px 10px 0 0;
+  border: 1px solid #c8ddd7;
+  border-bottom: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.drug-card {
+  background: var(--card);
+  border: 1px solid #e5e2dc;
+  border-top: none;
+  padding: 12px;
+}
+
+.drug-card:last-child { border-radius: 0 0 10px 10px; }
+.drug-card:first-of-type { border-top: 1px solid #e5e2dc; }
+
+.drug-card + .drug-card { border-top: 1px dashed #e0ddd7; }
+
+.drug-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 6px;
+}
+
+.drug-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.drug-generic {
+  font-size: 11px;
+  color: var(--text-sub);
+  margin-top: 1px;
+}
+
+.drug-freq {
+  font-size: 10.5px;
+  color: var(--text-sub);
+  text-align: right;
+  max-width: 50%;
+  line-height: 1.4;
+}
+
+.drug-note {
+  font-size: 11px;
+  color: var(--blue);
+  background: var(--blue-light);
+  padding: 3px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-bottom: 8px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.drug-max {
+  font-size: 10.5px;
+  color: var(--warn);
+  margin-bottom: 6px;
+}
+
+.form-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-top: 1px dotted #eee;
+  gap: 8px;
+}
+
+.form-row:first-child { border-top: none; }
+
+.form-label {
+  font-size: 11.5px;
+  color: var(--text-sub);
+  flex: 1;
+  min-width: 0;
+}
+
+.form-result {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.result-main {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--accent-dark);
+}
+
+.result-sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  color: var(--text-sub);
+  margin-top: 1px;
+}
+
+.result-empty {
+  font-size: 11px;
+  color: #bbb;
+}
+
+/* Age-based table */
+.age-table {
+  width: 100%;
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+.age-table td {
+  padding: 3px 6px;
+  border-bottom: 1px dotted #eee;
+}
+
+.age-table td:first-child { color: var(--text-sub); }
+.age-table td:last-child {
+  text-align: right;
+  font-weight: 600;
+  color: var(--blue);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── Modal ── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal-overlay.show { display: flex; }
+
+.modal {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 24px 20px;
+  max-width: 360px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.2);
+}
+
+.modal h2 {
+  font-size: 16px;
+  margin-bottom: 12px;
+  color: var(--accent-dark);
+}
+
+.modal p {
+  font-size: 12px;
+  color: var(--text-sub);
+  margin-bottom: 10px;
+  line-height: 1.7;
+}
+
+.modal-close {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  margin-top: 12px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Noto Sans JP', sans-serif;
+}
+
+/* ── Search ── */
+.search-bar {
+  padding: 0 16px 8px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 8px 12px 8px 34px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  font-size: 13px;
+  font-family: 'Noto Sans JP', sans-serif;
+  outline: none;
+  transition: border-color 0.2s;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%236b6660' viewBox='0 0 24 24'%3E%3Cpath d='M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 10px center;
+}
+
+.search-input:focus { border-color: var(--accent); }
+
+/* ── Print ── */
+@media print {
+  .header { position: static; }
+  .tabs-scroll, .search-bar { display: none; }
+  .drug-section { break-inside: avoid; }
+  body { background: #fff; }
+}
+
+/* ── Landscape / tablet ── */
+@media (min-width: 700px) {
+  .container { max-width: 720px; margin: 0 auto; padding: 16px; }
+  .drug-cards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <h1>小児薬用量換算<small>Pediatric Dose Calculator</small></h1>
+    <button class="info-btn" onclick="document.getElementById('modal').classList.add('show')">?</button>
+  </div>
+  <div class="weight-area">
+    <label>体重</label>
+    <input type="number" id="weightInput" inputmode="decimal" min="1" max="70" step="0.1" placeholder="0.0" enterkeyhint="done">
+    <span class="unit">kg</span>
+    <div class="weight-presets">
+      <div class="weight-preset" data-w="5">5</div>
+      <div class="weight-preset" data-w="8">8</div>
+      <div class="weight-preset" data-w="10">10</div>
+      <div class="weight-preset" data-w="12">12</div>
+      <div class="weight-preset" data-w="15">15</div>
+      <div class="weight-preset" data-w="20">20</div>
+      <div class="weight-preset" data-w="25">25</div>
+      <div class="weight-preset" data-w="30">30</div>
+    </div>
+  </div>
+</div>
+
+<div class="tabs-scroll">
+  <div class="category-tabs" id="categoryTabs"></div>
+</div>
+
+<div class="search-bar">
+  <input type="text" class="search-input" id="searchInput" placeholder="薬品名で検索...">
+</div>
+
+<div class="container">
+  <div class="disclaimer">
+    ⚠ 本シートは処方の参考資料です。実際の投与量は添付文書・最新ガイドラインを確認のうえ、医師・薬剤師の判断で決定してください。
+  </div>
+  <div id="drugContent"></div>
+</div>
+
+<!-- Info Modal -->
+<div class="modal-overlay" id="modal" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="modal">
+    <h2>使い方</h2>
+    <p>① 上部の体重欄に患児の体重(kg)を入力<br>（プリセットボタンでも入力可）</p>
+    <p>② 各薬剤の1回量・1日量が自動で算出されます</p>
+    <p>③ カテゴリタブで絞り込み、検索バーで薬品名検索も可能</p>
+    <h2 style="margin-top:16px">注意事項</h2>
+    <p>用量は添付文書ベースの一般的な常用量です。年齢・腎機能・肝機能・病態等を考慮し、必ず添付文書を確認してください。</p>
+    <p>年齢別用量の薬剤（ザイザル・アレグラ・ホクナリンテープ等）は体重換算ではなく年齢区分で表示しています。</p>
+    <h2 style="margin-top:16px">ホーム画面に追加</h2>
+    <p>Safari下部の共有ボタン(□↑) → 「ホーム画面に追加」でアプリのように使えます。オフラインでも動作します。</p>
+    <button class="modal-close" onclick="document.getElementById('modal').classList.remove('show')">閉じる</button>
+  </div>
+</div>
+
+<script>
+// ── Drug Database ──
+const DRUGS=[{category:"解熱鎮痛",icon:"🌡",drugs:[{name:"カロナール",generic:"アセトアミノフェン",forms:[{form:"シロップ 2%（20mg/mL）",unit:"mL",conc:20},{form:"細粒 20%（200mg/g）",unit:"g",conc:200},{form:"細粒 50%（500mg/g）",unit:"g",conc:500}],dose:10,perDay:1,freq:"1回量　4〜6時間あけて",max:"1日総量 60mg/kg（最大1500mg）",note:"10〜15mg/kg/回",isPerDose:true},{name:"アンヒバ坐剤",generic:"アセトアミノフェン坐剤",forms:[{form:"坐剤 50mg",unit:"個",conc:50,fixed:true},{form:"坐剤 100mg",unit:"個",conc:100,fixed:true},{form:"坐剤 200mg",unit:"個",conc:200,fixed:true}],dose:10,perDay:1,freq:"1回量　4〜6時間あけて",max:"1日総量 60mg/kg（最大1500mg）",note:"10〜15mg/kg/回",isPerDose:true}]},{category:"抗菌薬",icon:"💊",drugs:[{name:"ワイドシリン",generic:"アモキシシリン(AMPC)",forms:[{form:"細粒 10%（100mg/g）",unit:"g",conc:100},{form:"細粒 20%（200mg/g）",unit:"g",conc:200}],dose:30,perDay:3,freq:"1日量 → 3回に分服",max:"1日 1500mg",note:"20〜40mg/kg/日 分3"},{name:"クラバモックス",generic:"AMPC/CVA配合DS",forms:[{form:"DS小児用（AMPC 64.3mg/g）",unit:"g",conc:64.3}],dose:90,perDay:2,freq:"1日量 → 2回に分服（食前）",max:"1日 AMPC 90mg/kg",note:"AMPC 90mg/kg/日 分2"},{name:"メイアクトMS",generic:"セフジトレンピボキシル(CDTR-PI)",forms:[{form:"小児用細粒 10%（100mg/g）",unit:"g",conc:100}],dose:9,perDay:3,freq:"1日量 → 3回に分服（食後）",max:"1日 300mg",note:"9mg/kg/日 分3"},{name:"フロモックス",generic:"セフカペンピボキシル(CFPN-PI)",forms:[{form:"小児用細粒 10%（100mg/g）",unit:"g",conc:100}],dose:9,perDay:3,freq:"1日量 → 3回に分服（食後）",max:"1日 300mg",note:"9mg/kg/日 分3"},{name:"ジスロマック",generic:"アジスロマイシン(AZM)",forms:[{form:"細粒小児用 10%（100mg/g）",unit:"g",conc:100}],dose:10,perDay:1,freq:"1日1回 3日間",max:"1日 500mg",note:"10mg/kg/日 1日1回 3日間"},{name:"クラリス",generic:"クラリスロマイシン(CAM)",forms:[{form:"DS小児用 10%（100mg/g）",unit:"g",conc:100}],dose:15,perDay:2,freq:"1日量 → 2回に分服",max:"1日 800mg",note:"10〜15mg/kg/日 分2"},{name:"ホスミシン",generic:"ホスホマイシン(FOM)",forms:[{form:"DS 200（200mg/g）",unit:"g",conc:200},{form:"DS 400（400mg/g）",unit:"g",conc:400}],dose:40,perDay:3,freq:"1日量 → 3〜4回に分服",max:"1日 2000〜3000mg",note:"40〜120mg/kg/日 分3〜4"},{name:"オゼックス",generic:"トスフロキサシン(TFLX)",forms:[{form:"細粒小児用 15%（150mg/g）",unit:"g",conc:150}],dose:12,perDay:2,freq:"1日量 → 2回に分服",max:"1日 360mg",note:"12mg/kg/日 分2"}]},{category:"鎮咳・去痰",icon:"🫁",drugs:[{name:"アスベリン",generic:"チペピジン",forms:[{form:"シロップ 0.5%（5mg/mL）",unit:"mL",conc:5},{form:"DS 20%（200mg/g）",unit:"g",conc:200}],dose:1.5,perDay:3,freq:"1日量 → 3回に分服",max:"",note:"1〜2mg/kg/日 分3"},{name:"メジコン",generic:"デキストロメトルファン",forms:[{form:"シロップ（2.5mg/mL）",unit:"mL",conc:2.5},{form:"散 10%（100mg/g）",unit:"g",conc:100}],dose:1.5,perDay:3,freq:"1日量 → 3〜4回に分服",max:"",note:"1〜2mg/kg/日 分3〜4"},{name:"ムコダイン",generic:"カルボシステイン",forms:[{form:"シロップ 5%（50mg/mL）",unit:"mL",conc:50},{form:"DS 33.3%（333mg/g）",unit:"g",conc:333},{form:"DS 50%（500mg/g）",unit:"g",conc:500}],dose:30,perDay:3,freq:"1日量 → 3回に分服",max:"1日 1500mg",note:"30mg/kg/日 分3"},{name:"ムコソルバン",generic:"アンブロキソール",forms:[{form:"シロップ 0.3%（3mg/mL）",unit:"mL",conc:3},{form:"DS 1.5%（15mg/g）",unit:"g",conc:15}],dose:0.9,perDay:3,freq:"1日量 → 3回に分服",max:"1日 45mg",note:"0.9mg/kg/日 分3"}]},{category:"抗アレルギー",icon:"🤧",drugs:[{name:"ザイザルシロップ",generic:"レボセチリジン",forms:[{form:"シロップ 0.05%（0.5mg/mL）",unit:"mL",conc:0.5}],dose:null,perDay:2,freq:"1日2回（朝・就寝前）",max:"",note:"",ageDose:[{a:"6ヶ月〜1歳未満",d:"2.5mL/日"},{a:"1〜7歳",d:"5mL/日"},{a:"7〜15歳",d:"10mL/日"}]},{name:"アレグラDS",generic:"フェキソフェナジン",forms:[{form:"DS 5%（50mg/g）",unit:"g",conc:50}],dose:null,perDay:2,freq:"1日2回",max:"",note:"",ageDose:[{a:"6ヶ月〜2歳",d:"30mg/日"},{a:"2〜7歳",d:"30mg/日"},{a:"7〜12歳",d:"60mg/日"},{a:"12歳〜",d:"120mg/日"}]},{name:"アレジオンDS",generic:"エピナスチン",forms:[{form:"DS 1%（10mg/g）",unit:"g",conc:10}],dose:null,perDay:1,freq:"1日1回",max:"",note:"",ageDose:[{a:"3〜7歳",d:"10mg/日"},{a:"7〜12歳",d:"10mg/日"},{a:"12歳〜",d:"20mg/日"}]},{name:"ペリアクチン",generic:"シプロヘプタジン",forms:[{form:"シロップ 0.04%（0.4mg/mL）",unit:"mL",conc:0.4},{form:"散 1%（10mg/g）",unit:"g",conc:10}],dose:0.25,perDay:3,freq:"1日量 → 2〜3回に分服",max:"",note:"0.25mg/kg/日 分2〜3"},{name:"モンテルカスト",generic:"シングレア/キプレス",forms:[{form:"細粒 4mg",unit:"包",conc:4,fixed:true}],dose:null,perDay:1,freq:"1日1回 就寝前",max:"",note:"",ageDose:[{a:"1〜6歳",d:"4mg（細粒1包）"},{a:"6〜15歳",d:"5mg（チュアブル1錠）"}]}]},{category:"気管支拡張",icon:"💨",drugs:[{name:"メプチンシロップ",generic:"プロカテロール",forms:[{form:"シロップ 5μg/mL",unit:"mL",conc:0.005}],dose:0.0025,perDay:2,freq:"1日量 → 2〜3回に分服",max:"",note:"0.5mL/kg/日 分2〜3",customCalc:function(w){return{daily:0.5*w,unit:"mL"}}},{name:"ホクナリンテープ",generic:"ツロブテロール",forms:[{form:"0.5mg / 1mg / 2mg",unit:"枚",conc:null,fixed:true}],dose:null,perDay:1,freq:"1日1回 胸・背中・上腕",max:"",note:"",ageDose:[{a:"6ヶ月〜3歳未満",d:"0.5mg 1枚"},{a:"3〜9歳未満",d:"1mg 1枚"},{a:"9歳以上",d:"2mg 1枚"}]}]},{category:"消化器系",icon:"🫃",drugs:[{name:"ナウゼリン",generic:"ドンペリドン",forms:[{form:"DS 1%（10mg/g）",unit:"g",conc:10},{form:"シロップ 0.1%（1mg/mL）",unit:"mL",conc:1}],dose:1.5,perDay:3,freq:"1日量 → 3回に分服（食前）",max:"1日 30mg",note:"1〜2mg/kg/日 分3"},{name:"ビオフェルミンR散",generic:"耐性乳酸菌",forms:[{form:"散",unit:"g",conc:null}],dose:null,perDay:3,freq:"1日量 → 3回に分服",max:"",note:"",ageDose:[{a:"3歳未満",d:"1g/日"},{a:"3〜6歳",d:"2g/日"},{a:"6歳〜",d:"3g/日"}]}]},{category:"抗けいれん",icon:"🧠",drugs:[{name:"ダイアップ坐剤",generic:"ジアゼパム",forms:[{form:"坐剤 4mg",unit:"個",conc:4,fixed:true},{form:"坐剤 6mg",unit:"個",conc:6,fixed:true},{form:"坐剤 10mg",unit:"個",conc:10,fixed:true}],dose:0.5,perDay:1,freq:"1回量（発熱時、8h後に2回目可）",max:"1回 10mg",note:"0.4〜0.5mg/kg/回",isPerDose:true}]},{category:"抗ウイルス",icon:"🦠",drugs:[{name:"タミフルDS",generic:"オセルタミビル",forms:[{form:"DS 3%（30mg/g）",unit:"g",conc:30}],dose:4,perDay:2,freq:"1日量 → 2回に分服 5日間",max:"1日 150mg（1回75mg×2）",note:"4mg/kg/日 分2（治療）"}]}];
+
+function r2(v){return v>=10?Math.round(v*10)/10:Math.round(v*100)/100}
+
+function calc(drug,form,w){
+  if(!w||w<=0)return null;
+  if(drug.ageDose&&!drug.dose)return{type:"age",data:drug.ageDose};
+  if(drug.customCalc){const res=drug.customCalc(w);return{type:"custom",daily:r2(res.daily),unit:res.unit,perDay:drug.perDay,perDose:r2(res.daily/drug.perDay)}}
+  const isPerDose=drug.isPerDose;
+  const totalMg=drug.dose*w;
+  if(isPerDose){
+    const perDoseMg=totalMg;
+    if(form.fixed)return{type:"fixed-dose",perDoseMg:r2(perDoseMg),formMg:form.conc,formUnit:form.unit};
+    return{type:"per-dose",perDoseMg:r2(perDoseMg),perDoseAmt:r2(perDoseMg/form.conc),unit:form.unit};
+  }
+  const dailyMg=totalMg;
+  const perDoseMg=dailyMg/drug.perDay;
+  if(form.fixed)return{type:"fixed",dailyMg:r2(dailyMg),perDoseMg:r2(perDoseMg),perDay:drug.perDay,formMg:form.conc,formUnit:form.unit};
+  return{type:"calc",dailyMg:r2(dailyMg),perDoseMg:r2(perDoseMg),dailyAmt:r2(dailyMg/form.conc),perDoseAmt:r2(perDoseMg/form.conc),unit:form.unit,perDay:drug.perDay};
+}
+
+let activeCat="all", searchQuery="";
+
+function render(){
+  const w=parseFloat(document.getElementById("weightInput").value)||0;
+  let html="";
+  DRUGS.forEach(cat=>{
+    if(activeCat!=="all"&&cat.category!==activeCat)return;
+    let drugCards="";
+    let visibleCount=0;
+    cat.drugs.forEach(drug=>{
+      const q=searchQuery.toLowerCase();
+      if(q&&!drug.name.toLowerCase().includes(q)&&!drug.generic.toLowerCase().includes(q))return;
+      visibleCount++;
+      let formsHtml="";
+      drug.forms.forEach(form=>{
+        const res=calc(drug,form,w);
+        let resultHtml="";
+        if(!res){
+          resultHtml=`<span class="result-empty">体重を入力</span>`;
+        }else if(res.type==="age"){
+          resultHtml=`<table class="age-table">${res.data.map(r=>`<tr><td>${r.a}</td><td>${r.d}</td></tr>`).join("")}</table>`;
+        }else if(res.type==="custom"){
+          resultHtml=`<div class="result-main">${res.perDose} ${res.unit}/回</div><div class="result-sub">${res.daily} ${res.unit}/日（${res.perDay}回/日）</div>`;
+        }else if(res.type==="per-dose"){
+          resultHtml=`<div class="result-main">${res.perDoseAmt} ${res.unit}/回</div><div class="result-sub">${res.perDoseMg}mg/回</div>`;
+        }else if(res.type==="fixed-dose"){
+          const n=r2(res.perDoseMg/res.formMg);
+          resultHtml=`<div class="result-main">${res.perDoseMg}mg/回</div><div class="result-sub">→ 約${n}${res.formUnit}/回</div>`;
+        }else if(res.type==="fixed"){
+          const n=r2(res.perDoseMg/res.formMg);
+          resultHtml=`<div class="result-main">${res.perDoseMg}mg/回</div><div class="result-sub">${res.dailyMg}mg/日（${res.perDay}回/日）→ 約${n}${res.formUnit}/回</div>`;
+        }else{
+          resultHtml=`<div class="result-main">${res.perDoseAmt} ${res.unit}/回</div><div class="result-sub">${res.dailyAmt} ${res.unit}/日（${res.perDay}回/日）/ ${res.dailyMg}mg/日</div>`;
+        }
+        formsHtml+=`<div class="form-row"><div class="form-label">${form.form}</div><div class="form-result">${resultHtml}</div></div>`;
+      });
+
+      drugCards+=`<div class="drug-card">
+        <div class="drug-header">
+          <div><div class="drug-name">${drug.name}</div><div class="drug-generic">${drug.generic}</div></div>
+          <div class="drug-freq">${drug.freq}</div>
+        </div>
+        ${drug.note?`<div class="drug-note">${drug.note}</div>`:""}
+        ${drug.max?`<div class="drug-max">⚠ ${drug.max}</div>`:""}
+        ${formsHtml}
+      </div>`;
+    });
+    if(visibleCount>0){
+      html+=`<div class="drug-section"><div class="section-header"><span>${cat.icon}</span> ${cat.category}</div>${drugCards}</div>`;
+    }
+  });
+  if(!html)html=`<div style="text-align:center;padding:40px;color:var(--text-sub);font-size:13px">該当する薬剤がありません</div>`;
+  document.getElementById("drugContent").innerHTML=html;
+}
+
+function initTabs(){
+  const c=document.getElementById("categoryTabs");
+  let h=`<div class="cat-tab active" data-c="all">すべて</div>`;
+  DRUGS.forEach(cat=>{h+=`<div class="cat-tab" data-c="${cat.category}">${cat.icon} ${cat.category}</div>`});
+  c.innerHTML=h;
+  c.addEventListener("click",e=>{
+    const tab=e.target.closest(".cat-tab");
+    if(!tab)return;
+    c.querySelectorAll(".cat-tab").forEach(t=>t.classList.remove("active"));
+    tab.classList.add("active");
+    activeCat=tab.dataset.c;
+    render();
+  });
+}
+
+// Weight presets
+document.querySelectorAll(".weight-preset").forEach(btn=>{
+  btn.addEventListener("click",function(){
+    document.querySelectorAll(".weight-preset").forEach(b=>b.classList.remove("active"));
+    this.classList.add("active");
+    document.getElementById("weightInput").value=this.dataset.w;
+    render();
+  });
+});
+
+document.getElementById("weightInput").addEventListener("input",()=>{
+  document.querySelectorAll(".weight-preset").forEach(b=>b.classList.remove("active"));
+  render();
+});
+
+document.getElementById("searchInput").addEventListener("input",e=>{
+  searchQuery=e.target.value;
+  render();
+});
+
+// Dismiss keyboard on done
+document.getElementById("weightInput").addEventListener("keydown",e=>{
+  if(e.key==="Enter")e.target.blur();
+});
+
+// Register SW
+if("serviceWorker"in navigator){
+  navigator.serviceWorker.register("sw.js").catch(()=>{});
+}
+
+initTabs();
+render();
+</script>
+</body>
+</html>
